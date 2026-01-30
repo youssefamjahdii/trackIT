@@ -1,5 +1,5 @@
 {
-  "name": "Copy of AWS Cloud-Native Project Tracker",
-  "description": "A sophisticated enterprise project management dashboard featuring manager updates, director insights powered by Gemini AI, and interactive D3.js timelines.",
+  "name": "TrackIT",
+  "description": "A modern, human-centric project intelligence platform for high-performance teams.",
   "requestFramePermissions": []
 }
