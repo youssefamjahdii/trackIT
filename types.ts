@@ -24,6 +24,7 @@ export interface Project {
   startDate: string;
   endDate: string;
   updates: ProjectUpdate[];
+  dependencies?: string[]; // IDs of projects this project depends on
 }
 
 export interface DirectorInsight {

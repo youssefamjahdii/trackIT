@@ -16,10 +16,12 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({ onCreate }) => {
     endDate: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    setSuccess(false);
 
     const newProject: Project = {
       id: `p-${Math.random().toString(36).substr(2, 9)}`,
@@ -30,6 +32,7 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({ onCreate }) => {
     setTimeout(() => {
       onCreate(newProject);
       setSubmitting(false);
+      setSuccess(true);
       setFormData({
         name: '',
         owner: '',
@@ -37,7 +40,6 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({ onCreate }) => {
         startDate: '',
         endDate: ''
       });
-      alert('New initiative provisioned.');
     }, 1000);
   };
 
@@ -46,7 +48,7 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({ onCreate }) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden">
+    <div className="max-w-2xl mx-auto bg-white rounded-[2.5rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden relative">
       <div className="bg-[#002855] p-10 text-white flex justify-between items-center">
         <div>
           <h2 className="text-xl font-extrabold tracking-tight">Initiate Initiative</h2>
@@ -60,6 +62,15 @@ const ProjectCreateForm: React.FC<ProjectCreateFormProps> = ({ onCreate }) => {
       </div>
       
       <form onSubmit={handleSubmit} className="p-10 space-y-8">
+        {success && (
+          <div className="bg-emerald-50 border border-emerald-100 p-4 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <p className="text-emerald-700 text-xs font-bold uppercase tracking-widest">Initiative Provisioned Successfully</p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="md:col-span-2 space-y-2">
             <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Initiative Name</label>
