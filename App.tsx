@@ -6,7 +6,7 @@ import DirectorDashboard from './components/DirectorDashboard';
 import ProjectCreateForm from './components/ProjectCreateForm';
 import { Icons, COLORS } from './constants';
 
-// Mock Initial Data with Dependencies
+// Mock Initial Data - In a real AWS deployment, this would be fetched from DynamoDB via API Gateway
 const INITIAL_PROJECTS: Project[] = [
   {
     id: 'p1',
@@ -70,10 +70,29 @@ const INITIAL_PROJECTS: Project[] = [
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'director' | 'manager' | 'create'>('director');
-  const [projects, setProjects] = useState<Project[]>(INITIAL_PROJECTS);
-  const [lastSelectedProjectId, setLastSelectedProjectId] = useState<string>(INITIAL_PROJECTS[0]?.id || '');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSelectedProjectId, setLastSelectedProjectId] = useState<string>('');
 
-  const handleNewUpdate = (update: ProjectUpdate) => {
+  // Simulated AWS Lambda Fetch
+  useEffect(() => {
+    const fetchCloudData = async () => {
+      setIsLoading(true);
+      // Simulate network latency to AWS region
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      setProjects(INITIAL_PROJECTS);
+      setLastSelectedProjectId(INITIAL_PROJECTS[0]?.id || '');
+      setIsLoading(false);
+    };
+    fetchCloudData();
+  }, []);
+
+  const handleNewUpdate = async (update: ProjectUpdate) => {
+    setIsSyncing(true);
+    // Simulate AWS API Gateway PUT request
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
     setProjects(prev => prev.map(p => {
       if (p.id === update.projectId) {
         return {
@@ -83,15 +102,37 @@ const App: React.FC = () => {
       }
       return p;
     }));
+    
     setLastSelectedProjectId(update.projectId);
+    setIsSyncing(false);
     setActiveTab('director');
   };
 
-  const handleCreateProject = (project: Project) => {
+  const handleCreateProject = async (project: Project) => {
+    setIsSyncing(true);
+    // Simulate AWS Lambda POST request
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
     setProjects(prev => [...prev, project]);
     setLastSelectedProjectId(project.id);
+    setIsSyncing(false);
     setActiveTab('director');
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
+        <div className="relative w-24 h-24 mb-8">
+           <div className="absolute inset-0 border-4 border-slate-200 rounded-full"></div>
+           <div className="absolute inset-0 border-4 border-[#F57C23] rounded-full border-t-transparent animate-spin"></div>
+           <div className="absolute inset-0 flex items-center justify-center">
+             <span className="text-[10px] font-black text-[#002855] italic">AWS</span>
+           </div>
+        </div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Syncing with Cloud Terminal...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col selection:bg-orange-100 selection:text-orange-900">
@@ -99,16 +140,14 @@ const App: React.FC = () => {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-20">
-            {/* BRAND LOGO - REFINED TO IMAGE SPECS */}
+            {/* BRAND LOGO */}
             <div 
               className="flex items-center cursor-pointer group select-none" 
               onClick={() => setActiveTab('director')}
             >
               <div className="relative flex items-center transition-transform group-hover:scale-105 duration-300">
-                {/* Stylized 'Track' */}
                 <span className="text-3xl font-black tracking-tighter text-[#002855] italic">T</span>
                 <span className="text-3xl font-black tracking-tighter text-[#F57C23] italic">rack</span>
-                {/* Space and 'It' with swoosh */}
                 <div className="relative ml-2">
                   <span className="text-3xl font-black tracking-tighter text-[#F57C23] italic">It</span>
                   <svg className="absolute -right-7 -top-2 w-10 h-10 text-[#F57C23] opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -141,8 +180,20 @@ const App: React.FC = () => {
 
             <div className="flex items-center gap-4">
               <div className="hidden lg:flex flex-col text-right">
-                <span className="text-[10px] font-black text-slate-900 leading-none uppercase tracking-tighter">Terminal ID: SR-X1</span>
-                <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest mt-1">Status: Active</span>
+                <span className="text-[10px] font-black text-slate-900 leading-none uppercase tracking-tighter">AWS region: eu-west-1</span>
+                <div className="flex items-center justify-end gap-1.5 mt-1">
+                  {isSyncing ? (
+                    <>
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                      <span className="text-[8px] text-blue-500 font-bold uppercase tracking-widest">Writing to DynamoDB...</span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                      <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest">Cloud Encrypted</span>
+                    </>
+                  )}
+                </div>
               </div>
               <div className="w-10 h-10 rounded-2xl bg-[#002855] flex items-center justify-center text-white font-bold text-xs shadow-lg shadow-blue-900/20">
                 OP
@@ -170,7 +221,7 @@ const App: React.FC = () => {
             />
           )}
           {activeTab === 'create' && (
-            <ProjectCreateForm onCreate={handleCreateProject} />
+            <ProjectCreateForm projects={projects} onCreate={handleCreateProject} />
           )}
         </div>
       </main>
@@ -184,7 +235,7 @@ const App: React.FC = () => {
              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Aerospace Intelligence</span>
           </div>
           <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest text-center">
-            Logistics & Roadmap Encryption Protocol &copy; 2024 • Powered by Gemini AI
+            Logistics & Roadmap Encryption Protocol &copy; 2024 • Powered by Gemini AI • Hosted on AWS Solutions
           </p>
         </div>
       </footer>

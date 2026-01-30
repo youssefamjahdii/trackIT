@@ -58,17 +58,42 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({ projects, selecte
       case ProjectStatus.ON_TRACK: return 0;
       case ProjectStatus.AT_RISK: return 1;
       case ProjectStatus.DELAYED: return 2;
+      case ProjectStatus.COMPLETED: return -1;
       default: return 0;
     }
   };
 
+  /**
+   * Change Detection: Compares current status with the status from 7 days ago.
+   */
   const checkStatusChange = (project: Project) => {
-    if (project.updates.length < 2) return null;
-    const latest = project.updates[project.updates.length - 1];
-    const previous = project.updates[project.updates.length - 2];
+    if (project.updates.length === 0) return null;
+
+    const latestUpdate = project.updates[project.updates.length - 1];
+    const latestWeight = getStatusWeight(latestUpdate.status);
+
+    // Calculate timestamp for 7 days ago
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+
+    // Find the update that was active 7 days ago (the latest update before or on that date)
+    const historicalUpdates = [...project.updates]
+      .filter(u => new Date(u.timestamp) <= sevenDaysAgo)
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    // If no update exists from 7+ days ago, compare with the earliest available update
+    // as long as there are at least two updates to compare.
+    const comparisonUpdate = historicalUpdates.length > 0 
+      ? historicalUpdates[0] 
+      : (project.updates.length > 1 ? project.updates[0] : null);
+
+    if (!comparisonUpdate || comparisonUpdate.id === latestUpdate.id) return null;
+
+    const previousWeight = getStatusWeight(comparisonUpdate.status);
     
-    if (getStatusWeight(latest.status) > getStatusWeight(previous.status)) {
-      return "Health Degradation Detected";
+    // Alert if status has worsened (weight increased)
+    if (latestWeight > previousWeight) {
+      return "⚠️ Status Change";
     }
     return null;
   };
@@ -140,7 +165,7 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({ projects, selecte
             {filteredProjects.map(project => {
               const latestUpdate = project.updates[project.updates.length - 1];
               const currentStatus = latestUpdate?.status || ProjectStatus.ON_TRACK;
-              const statusChange = checkStatusChange(project);
+              const statusChangeLabel = checkStatusChange(project);
               
               return (
                 <button
@@ -171,10 +196,10 @@ const DirectorDashboard: React.FC<DirectorDashboardProps> = ({ projects, selecte
                     </span>
                   </div>
 
-                  {statusChange && (
-                    <div className="mt-3 flex items-center gap-1.5 animate-pulse">
-                      <span className="bg-rose-500 text-white text-[8px] font-black uppercase px-2 py-0.5 rounded italic">
-                        ⚠️ Health Alert
+                  {statusChangeLabel && (
+                    <div className="mt-3 flex items-center gap-1.5 animate-in fade-in slide-in-from-left-2 duration-500">
+                      <span className="bg-[#E1000F] text-white text-[9px] font-black uppercase px-2.5 py-1 rounded-lg italic flex items-center gap-1.5 shadow-sm shadow-red-900/20">
+                        <span className="animate-pulse">⚠️</span> {statusChangeLabel}
                       </span>
                     </div>
                   )}
